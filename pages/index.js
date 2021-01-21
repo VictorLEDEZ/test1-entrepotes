@@ -1,73 +1,35 @@
-import Head from 'next/head'
-import { connectToDatabase } from '../util/mongodb'
+import Head from 'next/head';
+import { connectToDatabase } from '../util/mongodb';
 
-export default function Home({ isConnected }) {
+export default function Home({ properties }) {
   return (
-    <div className="container">
+    <div className='container'>
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>Entrepotes</title>
+        <link rel='icon' href='/favicon.ico' />
       </Head>
 
       <main>
-        <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js with MongoDB!</a>
+        <h1 className='title'>
+          Cherchez une Annonce sur{' '}
+          <a href='https://www.entrepotes.ca/'>Entrepotes.ca!</a>
         </h1>
 
-        {isConnected ? (
-          <h2 className="subtitle">You are connected to MongoDB</h2>
-        ) : (
-          <h2 className="subtitle">
-            You are NOT connected to MongoDB. Check the <code>README.md</code>{' '}
-            for instructions.
-          </h2>
-        )}
-
-        <p className="description">
-          Get started by editing <code>pages/index.js</code>
-        </p>
-
-        <div className="grid">
-          <a href="https://nextjs.org/docs" className="card">
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className="card">
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className="card"
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="card"
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div className='grid'>
+          {properties &&
+            properties.map((property) => (
+              <a href='https://www.entrepotes.ca/' className='card'>
+                <h3>{property.title}</h3>
+                <p>--- {property.address.toUpperCase()} ---</p>
+                <p>Prix de l'espace : {property.price} $CAD/mois</p>
+                <br />
+                <img src={property.image} className='image' />
+                <br />
+                <p>Hote : </p>
+              </a>
+            ))}
         </div>
       </main>
-
-      <footer>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className="logo" />
-        </a>
-      </footer>
 
       <style jsx>{`
         .container {
@@ -169,8 +131,8 @@ export default function Home({ isConnected }) {
           text-align: left;
           color: inherit;
           text-decoration: none;
-          border: 1px solid #eaeaea;
-          border-radius: 10px;
+          border: 5px solid #eaeaea;
+          border-radius: 30px;
           transition: color 0.15s ease, border-color 0.15s ease;
         }
 
@@ -196,6 +158,11 @@ export default function Home({ isConnected }) {
           height: 1em;
         }
 
+        .image {
+          width: 300px;
+          height: 300px;
+        }
+
         @media (max-width: 600px) {
           .grid {
             width: 100%;
@@ -219,15 +186,50 @@ export default function Home({ isConnected }) {
         }
       `}</style>
     </div>
-  )
+  );
 }
 
-export async function getServerSideProps(context) {
-  const { client } = await connectToDatabase()
+// -------------------DEFAULT CODE------------------------
 
-  const isConnected = await client.isConnected()
+// // This function checks if the client is connected to the database. If yes, it returns true
+// export async function getServerSideProps(context) {
+//   const { client } = await connectToDatabase();
+
+//   const isConnected = await client.isConnected(); // Returns true or false
+
+//   return {
+//     // Then, we are sending this boolean as a prop component
+//     props: { isConnected },
+//   };
+// }
+
+// -----------------MY CODE----------------------------
+export async function getServerSideProps(context) {
+  const { db } = await connectToDatabase();
+
+  // These are MongoDB methods. We get all our data from a collection called 'annonces' thanks to find(). Then, we sort them by id and we get the last 10 annonces. Also, we convert that data to an array. As it is a promise, we can use the async await.
+  const data = await db
+    .collection('annonces')
+    .find()
+    .sort({ _id: 1 })
+    .limit(10)
+    .toArray();
+
+  const properties = data.map((property) => {
+    // to convert int to string because having an int will return an error
+    // const price = JSON.parse(JSON.stringify(property.price));
+
+    return {
+      title: property.title,
+      image: property.images.pictures_url,
+      address: property.address,
+      // converts the price object to a decimal number string
+      price: property.price,
+    };
+  });
 
   return {
-    props: { isConnected },
-  }
+    // Then, we are sending this boolean as a prop component
+    props: { properties },
+  };
 }
