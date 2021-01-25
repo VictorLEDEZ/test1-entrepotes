@@ -1,36 +1,59 @@
 import Head from 'next/head';
+import { useState } from 'react';
 import { connectToDatabase } from '../util/mongodb';
 
 export default function Home({ properties }) {
+  const [searchTerm, setSearchTerm] = useState('');
   return (
     <div className='container'>
       <Head>
         <title>Entrepotes</title>
         <link rel='icon' href='/favicon.ico' />
       </Head>
-
       <main>
         <h1 className='title'>
           Cherchez une Annonce sur{' '}
           <a href='https://www.entrepotes.ca/'>Entrepotes.ca!</a>
         </h1>
-
+        <br />
+        <div className='search'>
+          <input
+            type='text'
+            placeholder='Cherchez un localisation...'
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+            }}
+          />
+        </div>
         <div className='grid'>
-          {properties &&
-            properties.map((property) => (
-              <a href='https://www.entrepotes.ca/' className='card'>
-                <h3>{property.title}</h3>
-                <p>--- {property.address.toUpperCase()} ---</p>
-                <p>Prix de l'espace : {property.price} $CAD/mois</p>
-                <br />
-                <img src={property.image} className='image' />
-                <br />
-                <p>Hote : </p>
-              </a>
-            ))}
+          {properties
+            .filter((property) => {
+              if (searchTerm === '') {
+                return property;
+              }
+              if (
+                property.address
+                  .toLowerCase()
+                  .includes(searchTerm.toLowerCase())
+              ) {
+                return property;
+              }
+            })
+            .map((property, key) => {
+              return (
+                <a href='https://www.entrepotes.ca/' className='card' key={key}>
+                  <h3>{property.title}</h3>
+                  <p>--- {property.address.toUpperCase()} ---</p>
+                  <p>Prix de l'espace : {property.price} $CAD/mois</p>
+                  <br />
+                  <img src={property.image} className='image' />
+                  <br />
+                  <p>Hote : </p>
+                </a>
+              );
+            })}
         </div>
       </main>
-
       <style jsx>{`
         .container {
           min-height: 100vh;
@@ -170,7 +193,6 @@ export default function Home({ properties }) {
           }
         }
       `}</style>
-
       <style jsx global>{`
         html,
         body {
